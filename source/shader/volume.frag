@@ -97,19 +97,26 @@ void main()
     // the traversal loop,
     // termination when the sampling position is outside volume boundarys
     // another termination condition for early ray termination is added
+    float samples = 0;
     while (inside_volume)
     {      
         // get sample
         float s = get_sample_data(sampling_pos);
 
+        samples+=1.0;
+
         // dummy code
-        dst = vec4(sampling_pos, 1.0);
+        dst += texture(transfer_texture, vec2(s, s));
         
         // increment the ray sampling position
         sampling_pos  += ray_increment;
 
         // update the loop termination condition
         inside_volume  = inside_volume_bounds(sampling_pos);
+    }
+
+    if (samples > 0.0) {
+      dst /= samples;
     }
 #endif
     
@@ -122,14 +129,46 @@ void main()
         // get sample
         float s = get_sample_data(sampling_pos);
 
-        // dummy code
-        dst = vec4(light_diffuse_color, 1.0);
+        if (s > iso_value) {
+          dst = texture(transfer_texture, vec2(s, s));
+          break;
+        }
+        
+        
 
         // increment the ray sampling position
         sampling_pos += ray_increment;
-#if TASK == 13 // Binary Search
-        IMPLEMENT;
-#endif
+        #if TASK == 13 // Binary Search
+
+         if (s > iso_value) {
+
+         float low_bound = get_sample_data(sampling_pos-ray_increment);
+
+         //Binary Search
+
+             float low= low_bound;
+             float upper= s;
+
+             for(int i=0;i<64; i++){
+
+             float mid_point=(low+upper)*0.5;
+
+             if(mid_point==iso_value) break;
+
+             if(mid_point<iso_value) low=mid_point;
+
+             if(mid_point>iso_value) upper=mid_point;
+
+             } 
+
+
+        float new_s= 0.5*(low+upper);
+
+         dst = texture(transfer_texture, vec2(new_s, new_s));
+          break;
+        }     
+        #endif
+
 #if ENABLE_LIGHTNING == 1 // Add Shading
         IMPLEMENTLIGHT;
 #if ENABLE_SHADOWING == 1 // Add Shadows
@@ -141,6 +180,7 @@ void main()
         inside_volume = inside_volume_bounds(sampling_pos);
     }
 #endif 
+
 
 #if TASK == 31
     // the traversal loop,
@@ -172,4 +212,3 @@ void main()
     // return the calculated color value
     FragColor = dst;
 }
-
