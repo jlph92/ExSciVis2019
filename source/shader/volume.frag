@@ -142,27 +142,27 @@ void main()
 
          if (s > iso_value) {
 
-         float low_bound = get_sample_data(sampling_pos-ray_increment);
-
          //Binary Search
 
-             float low= low_bound;
-             float upper= s;
+             vec3 low= sampling_pos-ray_increment;
+             vec3 upper= sampling_pos;
 
              for(int i=0;i<64; i++){
 
-             float mid_point=(low+upper)*0.5;
+             vec3 mid_point=(low+upper)*0.5;
 
-             if(mid_point==iso_value) break;
+             float s = get_sample_data(mid_point);
 
-             if(mid_point<iso_value) low=mid_point;
+             if(s==iso_value) break;
 
-             if(mid_point>iso_value) upper=mid_point;
+             if(s<iso_value) low=mid_point;
+
+             if(s>iso_value) upper=mid_point;
 
              } 
 
 
-        float new_s= 0.5*(low+upper);
+        float new_s= get_sample_data(0.5*(low+upper));
 
          dst = texture(transfer_texture, vec2(new_s, new_s));
           break;
