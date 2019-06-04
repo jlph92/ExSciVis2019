@@ -13,3 +13,11 @@ How To Install:
 
 GUI created with ImGui
 https://github.com/ocornut/imgui
+
+In Command Prompt:
+cd Documents/ExSciVis2019-master/build
+ccmake .. 
+make -j10
+cd build/Release/MyVolumeRaycaster 
+
+
