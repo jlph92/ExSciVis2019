@@ -47,6 +47,22 @@ get_sample_data(vec3 in_sampling_pos)
 
 }
 
+vec3
+get_gradient(vec3 pos)
+{
+    vec3 dim= max_bounds/volume_dimensions;
+    vec3 dimX= vec3(dim.x,0.0,0.0);
+    vec3 dimY= vec3(0.0,dim.y,0.0);
+    vec3 dimZ= vec3(0.0,0.0,dim.z);
+
+   float gradientX= (get_sample_data(pos+dimX)-get_sample_data(pos-dimX))/2;
+   float gradientY= (get_sample_data(pos+dimY)-get_sample_data(pos-dimY))/2;
+   float gradientZ= (get_sample_data(pos+dimZ)-get_sample_data(pos-dimZ))/2;
+
+   return normalize(vec3(gradientX,gradientY,gradientZ));
+
+}
+
 void main()
 {
     /// One step trough the volume
@@ -130,7 +146,8 @@ void main()
         float s = get_sample_data(sampling_pos);
 
         if (s > iso_value) {
-          dst = texture(transfer_texture, vec2(s, s));
+          //dst = texture(transfer_texture, vec2(s, s));
+          dst = vec4(get_gradient(sampling_pos),1);
           break;
         }
         
@@ -140,7 +157,7 @@ void main()
         sampling_pos += ray_increment;
         #if TASK == 13 // Binary Search
 
-         if (s > iso_value) {
+         if (s >=iso_value) {
 
          //Binary Search
 
