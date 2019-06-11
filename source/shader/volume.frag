@@ -47,6 +47,50 @@ get_sample_data(vec3 in_sampling_pos)
 
 }
 
+vec3
+get_gradient(vec3 pos)
+{
+    vec3 dim= max_bounds/volume_dimensions;
+    vec3 dimX= vec3(dim.x,0.0,0.0);
+    vec3 dimY= vec3(0.0,dim.y,0.0);
+    vec3 dimZ= vec3(0.0,0.0,dim.z);
+
+   float gradientX= (get_sample_data(pos+dimX)-get_sample_data(pos-dimX))/2;
+   float gradientY= (get_sample_data(pos+dimY)-get_sample_data(pos-dimY))/2;
+   float gradientZ= (get_sample_data(pos+dimZ)-get_sample_data(pos-dimZ))/2;
+
+   return normalize(vec3(gradientX,gradientY,gradientZ));
+
+}
+
+bool
+get_shadow(vec3 pos){
+    
+}
+
+vec3
+scalarMul(vec4 v1, float v2){
+    vec3 result= vec3( v1.x*v2, v1.y*v2, v1.z*v2);
+    return result;
+}
+
+vec3
+phong_shading(vec3 pos)
+{
+  float s = get_sample_data(pos);
+  vec4 materialColor= texture(transfer_texture, vec2(s, s));
+
+  vec3 Normal= get_gradient(pos);
+  vec3 light= -vec3(pos.x-light_position.x, pos.y-light_position.y, pos.z-light_position.z);
+  float scalar= max((Normal.x*light.x)+(Normal.y*light.y)+(Normal.z*light.z),0);
+
+  vec3 result= scalarMul(materialColor, scalar);
+  result= (result*light_diffuse_color);
+
+  return result;
+}
+
+
 void main()
 {
     /// One step trough the volume
@@ -97,19 +141,26 @@ void main()
     // the traversal loop,
     // termination when the sampling position is outside volume boundarys
     // another termination condition for early ray termination is added
+    float samples = 0;
     while (inside_volume)
     {      
         // get sample
         float s = get_sample_data(sampling_pos);
 
+        samples+=1.0;
+
         // dummy code
-        dst = vec4(sampling_pos, 1.0);
+        dst += texture(transfer_texture, vec2(s, s));
         
         // increment the ray sampling position
         sampling_pos  += ray_increment;
 
         // update the loop termination condition
         inside_volume  = inside_volume_bounds(sampling_pos);
+    }
+
+    if (samples > 0.0) {
+      dst /= samples;
     }
 #endif
     
@@ -121,26 +172,60 @@ void main()
     {
         // get sample
         float s = get_sample_data(sampling_pos);
+        vec3 s_temp= sampling_pos;
 
-        // dummy code
-        dst = vec4(light_diffuse_color, 1.0);
+        if (s > iso_value) {
+          //dst = texture(transfer_texture, vec2(s, s));
+          dst = texture(transfer_texture, vec2(s, s));
+       
 
         // increment the ray sampling position
-        sampling_pos += ray_increment;
+        
+        
 #if TASK == 13 // Binary Search
-        IMPLEMENT;
-#endif
-#if ENABLE_LIGHTNING == 1 // Add Shading
-        IMPLEMENTLIGHT;
-#if ENABLE_SHADOWING == 1 // Add Shadows
-        IMPLEMENTSHADOW;
-#endif
+
+
+         //Binary Search
+
+             vec3 low= sampling_pos-ray_increment;
+             vec3 upper= sampling_pos;
+
+             for(int i=0;i<64; i++){
+
+             sampling_pos=(low+upper)*0.5;
+
+             float s = get_sample_data(sampling_pos);
+
+             if(s==iso_value) break;
+
+             if(s<iso_value) low=sampling_pos;
+
+             if(s>iso_value) upper=sampling_pos;
+
+             } 
+
+
+        float new_s= get_sample_data(sampling_pos);
+
+         dst = texture(transfer_texture, vec2(new_s, new_s));
+         
 #endif
 
+#if ENABLE_LIGHTNING == 1 // Add Shading
+        dst = vec4(get_gradient(sampling_pos),1);
+#if ENABLE_SHADOWING == 1 // Add Shadows
+        dst = vec4(phong_shading(sampling_pos),1);
+#endif
+#endif
+           break;
+        }
+        sampling_pos= s_temp;
+        sampling_pos += ray_increment;
         // update the loop termination condition
         inside_volume = inside_volume_bounds(sampling_pos);
     }
 #endif 
+
 
 #if TASK == 31
     // the traversal loop,
@@ -172,4 +257,3 @@ void main()
     // return the calculated color value
     FragColor = dst;
 }
-
