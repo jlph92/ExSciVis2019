@@ -16,8 +16,12 @@ https://github.com/ocornut/imgui
 
 In Command Prompt:
 cd Documents/ExSciVis2019-master/
-cmake .
-make -j10
-cd build/Release/MyVolumeRaycaster 
+mkdir build
+cd build
+cmake ..
+Release
+make
+cd build/Release
+./MyVolumeRaycaster 
 
 
