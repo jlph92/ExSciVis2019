@@ -15,8 +15,8 @@ GUI created with ImGui
 https://github.com/ocornut/imgui
 
 In Command Prompt:
-cd Documents/ExSciVis2019-master/build
-ccmake .. 
+cd Documents/ExSciVis2019-master/
+cmake .
 make -j10
 cd build/Release/MyVolumeRaycaster 
 
