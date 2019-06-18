@@ -69,20 +69,21 @@ phong_shading(vec3 pos, vec4 dst){
     vec3 light =  normalize(light_position-pos);
     float dot = max(0, Norm.x*light.x+Norm.y*light.y+Norm.z*light.z);
 
-    vec3 k =  light_ambient_color*dot;
+    vec3 k =  light_diffuse_color*dot;
    
     return  vec3( k.x*dst.x, k.y*dst.y, k.z*dst.z);
 }
 
 bool
-shading(vec3 pos){
-    vec3 Norm = get_gradient(pos);
-    vec3 light =  normalize(light_position-pos);
+shading(vec3 sampling_pos){
+    vec3 light = normalize(sampling_pos-light_position);
 
     bool increase = false;
     bool decrease = false;
 
     vec3 ray_increment = light * sampling_distance;
+
+    sampling_pos += ray_increment;
 
     bool inside_volume = inside_volume_bounds(sampling_pos);
     
@@ -95,10 +96,11 @@ shading(vec3 pos){
         float s = get_sample_data(sampling_pos);
         if (s > iso_value)
             increase = true;
-        if (s > iso_value)
-            decrease  = true;
+        //if (s < iso_value)
+        //    decrease  = true;
 
-        if( increase && decrease) return true;
+        //if( increase && decrease) return true;
+        if( increase) return true;
         // increment the ray sampling position
         sampling_pos += ray_increment;
 
@@ -214,6 +216,8 @@ void main()
 
              if(s>iso_value) upper=mid_point;
 
+             sampling_pos = mid_point;
+
              } 
 
              s = get_sample_data(mid_point);  
@@ -225,9 +229,11 @@ void main()
 
 #if ENABLE_LIGHTNING == 1 // Add Shading
         dst = vec4(get_gradient(sampling_pos),1);
+        dst = vec4(phong_shading(sampling_pos, dst),1);
 #if ENABLE_SHADOWING == 1 // Add Shadows
-        // dst = vec4(phong_shading(sampling_pos, dst),1);
-        if(shading(sampling_pos)) dst = new vec4(0,0,0,0);
+        if(shading(sampling_pos)){
+            dst =  vec4(light_ambient_color,1);
+        }
 #endif
 #endif
         break;
