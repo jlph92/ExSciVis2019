@@ -63,6 +63,52 @@ get_gradient(vec3 pos)
 
 }
 
+vec3
+phong_shading(vec3 pos, vec4 dst){
+    vec3 Norm = get_gradient(pos);
+    vec3 light =  normalize(light_position-pos);
+    float dot = max(0, Norm.x*light.x+Norm.y*light.y+Norm.z*light.z);
+
+    vec3 k =  light_ambient_color*dot;
+   
+    return  vec3( k.x*dst.x, k.y*dst.y, k.z*dst.z);
+}
+
+bool
+shading(vec3 pos){
+    vec3 Norm = get_gradient(pos);
+    vec3 light =  normalize(light_position-pos);
+
+    bool increase = false;
+    bool decrease = false;
+
+    vec3 ray_increment = light * sampling_distance;
+
+    bool inside_volume = inside_volume_bounds(sampling_pos);
+    
+    if (!inside_volume)
+        discard;
+
+     while (inside_volume)
+    {
+        // get sample
+        float s = get_sample_data(sampling_pos);
+        if (s > iso_value)
+            increase = true;
+        if (s > iso_value)
+            decrease  = true;
+
+        if( increase && decrease) return true;
+        // increment the ray sampling position
+        sampling_pos += ray_increment;
+
+        // update the loop termination condition
+        inside_volume = inside_volume_bounds(sampling_pos);
+    }
+    return false;
+}
+
+
 void main()
 {
     /// One step trough the volume
@@ -146,27 +192,19 @@ void main()
         float s = get_sample_data(sampling_pos);
 
         if (s > iso_value) {
-          //dst = texture(transfer_texture, vec2(s, s));
-          dst = vec4(get_gradient(sampling_pos),1);
-          break;
-        }
+          //dst = texture(transfer_texture, vec2(s, s));         
         
-        
-
-        // increment the ray sampling position
-        sampling_pos += ray_increment;
         #if TASK == 13 // Binary Search
-
-         if (s >=iso_value) {
 
          //Binary Search
 
              vec3 low= sampling_pos-ray_increment;
              vec3 upper= sampling_pos;
+             vec3 mid_point;
 
              for(int i=0;i<64; i++){
 
-             vec3 mid_point=(low+upper)*0.5;
+             mid_point = (low+upper)*0.5;
 
              float s = get_sample_data(mid_point);
 
@@ -178,20 +216,25 @@ void main()
 
              } 
 
-
-        float new_s= get_sample_data(0.5*(low+upper));
-
-         dst = texture(transfer_texture, vec2(new_s, new_s));
-          break;
-        }     
+             s = get_sample_data(mid_point);  
         #endif
 
+            dst = texture(transfer_texture, vec2(s, s));
+
+  
+
 #if ENABLE_LIGHTNING == 1 // Add Shading
-        IMPLEMENTLIGHT;
+        dst = vec4(get_gradient(sampling_pos),1);
 #if ENABLE_SHADOWING == 1 // Add Shadows
-        IMPLEMENTSHADOW;
+        // dst = vec4(phong_shading(sampling_pos, dst),1);
+        if(shading(sampling_pos)) dst = new vec4(0,0,0,0);
 #endif
 #endif
+        break;
+    }
+
+        // increment the ray sampling position
+        sampling_pos += ray_increment;
 
         // update the loop termination condition
         inside_volume = inside_volume_bounds(sampling_pos);
