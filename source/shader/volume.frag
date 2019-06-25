@@ -265,7 +265,14 @@ void main()
         float s = get_sample_data(sampling_pos);
 #endif
         vec4 color = texture(transfer_texture, vec2(s, s));
-        vec3 I_current= vec3(color.r,color.g,color.b)*color.a;
+        vec3 rgb = vec3(color.r,color.g,color.b);
+        
+
+#if ENABLE_LIGHTNING == 1 // Add Shading
+        rgb = phong_shading(sampling_pos, color);
+#endif
+
+        vec3 I_current= rgb*color.a;
         Intensity = Intensity+(I_current*T);
         T = T*(1-color.a);
         
@@ -274,11 +281,6 @@ void main()
 
         // increment the ray sampling position
         sampling_pos += ray_increment;
-
-#if ENABLE_LIGHTNING == 1 // Add Shading
-        // IMPLEMENT;
-#endif
-
         // update the loop termination condition
         inside_volume = inside_volume_bounds(sampling_pos);
     }
