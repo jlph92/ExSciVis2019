@@ -21,6 +21,7 @@ uniform vec3    camera_location;
 uniform float   sampling_distance;
 uniform float   sampling_distance_ref;
 uniform float   iso_value;
+uniform float   iso_value_2;
 uniform vec3    max_bounds;
 uniform ivec3   volume_dimensions;
 
@@ -254,15 +255,27 @@ void main()
     // another termination condition for early ray termination is added
     float T=1;
     vec3 Intensity= vec3(0,0,0);
+
+    float s_min=min(iso_value,iso_value_2);
+    float s_max=max(iso_value,iso_value_2);
     
     while (inside_volume)
     {
         
         // get sample
         float s = get_sample_data(sampling_pos);
+        if (s > s_min) {
+
         vec4 color = texture(transfer_texture, vec2(s, s));
         vec3 rgb = vec3(color.r,color.g,color.b);
         float Alpha = color.a;
+
+            if (s > s_max) {
+                color = texture(transfer_texture, vec2(s, s));
+                rgb = vec3(color.r,color.g,color.b);
+                Alpha = color.a;
+        }
+
 
 #if ENABLE_OPACITY_CORRECTION == 1 // Opacity Correction
         float d_ref= 255*(sampling_distance/sampling_distance_ref);
@@ -283,6 +296,9 @@ void main()
         
         // dummy code
         dst = vec4( Intensity, 1.0);
+
+        break;
+    }
 
         // increment the ray sampling position
         sampling_pos += ray_increment;
