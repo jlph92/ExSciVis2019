@@ -259,22 +259,27 @@ void main()
     {
         
         // get sample
-#if ENABLE_OPACITY_CORRECTION == 1 // Opacity Correction
-        IMPLEMENT;
-#else
         float s = get_sample_data(sampling_pos);
-#endif
         vec4 color = texture(transfer_texture, vec2(s, s));
         vec3 rgb = vec3(color.r,color.g,color.b);
+        float Alpha = color.a;
+
+#if ENABLE_OPACITY_CORRECTION == 1 // Opacity Correction
+        float d_ref= 255*(sampling_distance/sampling_distance_ref);
+        Alpha = 1-pow((1-Alpha),d_ref);
+#else
+        
+#endif
+        
         
 
 #if ENABLE_LIGHTNING == 1 // Add Shading
         rgb = phong_shading(sampling_pos, color);
 #endif
 
-        vec3 I_current= rgb*color.a;
+        vec3 I_current= rgb*(Alpha);
         Intensity = Intensity+(I_current*T);
-        T = T*(1-color.a);
+        T = T*(1-Alpha);
         
         // dummy code
         dst = vec4( Intensity, 1.0);
