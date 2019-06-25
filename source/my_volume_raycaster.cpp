@@ -131,6 +131,7 @@ float       g_sampling_distance_fact_move = 2.0f;
 float       g_sampling_distance_fact_ref = 1.0f;
 
 float       g_iso_value = 0.2f;
+float       g_iso_value_2 = 0.4f;
 
 // set the light position and color for shading
 // set the light position and color for shading
@@ -355,7 +356,8 @@ void showGUI(){
         if (ImGui::TreeNode("Iso Surface Rendering")){
             ImGui::RadioButton("Inaccurate", &g_task_chosen, 12);
             ImGui::RadioButton("Binary Search", &g_task_chosen, 13);
-            ImGui::SliderFloat("Iso Value", &g_iso_value, 0.0f, 1.0f, "%.8f", 1.0f);
+            ImGui::SliderFloat("Iso Value 1", &g_iso_value, 0.0f, 1.0f, "%.8f", 1.0f);
+            ImGui::SliderFloat("Iso Value 2", &g_iso_value_2, 0.0f, 1.0f, "%.8f", 1.0f);
             ImGui::TreePop();
         }       
  
@@ -991,6 +993,7 @@ int main(int argc, char* argv[])
         glUniform1f(glGetUniformLocation(g_volume_program, "sampling_distance"), g_sampling_distance * sampling_fact);
         glUniform1f(glGetUniformLocation(g_volume_program, "sampling_distance_ref"), g_sampling_distance_fact_ref);
         glUniform1f(glGetUniformLocation(g_volume_program, "iso_value"), g_iso_value);
+        glUniform1f(glGetUniformLocation(g_volume_program, "iso_value_2"), g_iso_value_2);
         glUniform3fv(glGetUniformLocation(g_volume_program, "max_bounds"), 1,
             glm::value_ptr(g_max_volume_bounds));
         glUniform3iv(glGetUniformLocation(g_volume_program, "volume_dimensions"), 1,
