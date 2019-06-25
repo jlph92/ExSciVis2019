@@ -252,22 +252,31 @@ void main()
     // the traversal loop,
     // termination when the sampling position is outside volume boundarys
     // another termination condition for early ray termination is added
+    float T=1;
+    vec3 Intensity= vec3(0,0,0);
+    
     while (inside_volume)
     {
+        
         // get sample
 #if ENABLE_OPACITY_CORRECTION == 1 // Opacity Correction
         IMPLEMENT;
 #else
         float s = get_sample_data(sampling_pos);
 #endif
+        vec4 color = texture(transfer_texture, vec2(s, s));
+        vec3 I_current= vec3(color.r,color.g,color.b)*color.a;
+        Intensity = Intensity+(I_current*T);
+        T = T*(1-color.a);
+        
         // dummy code
-        dst = vec4(light_specular_color, 1.0);
+        dst = vec4( Intensity, 1.0);
 
         // increment the ray sampling position
         sampling_pos += ray_increment;
 
 #if ENABLE_LIGHTNING == 1 // Add Shading
-        IMPLEMENT;
+        // IMPLEMENT;
 #endif
 
         // update the loop termination condition
