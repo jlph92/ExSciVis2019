@@ -255,51 +255,38 @@ void main()
     // another termination condition for early ray termination is added
     float T=1;
     vec3 Intensity= vec3(0,0,0);
-
-    float s_min=min(iso_value,iso_value_2);
-    float s_max=max(iso_value,iso_value_2);
     
     while (inside_volume)
     {
         
         // get sample
         float s = get_sample_data(sampling_pos);
-        if (s > s_min) {
+
 
         vec4 color = texture(transfer_texture, vec2(s, s));
         vec3 rgb = vec3(color.r,color.g,color.b);
         float Alpha = color.a;
 
-            if (s > s_max) {
-                color = texture(transfer_texture, vec2(s, s));
-                rgb = vec3(color.r,color.g,color.b);
-                Alpha = color.a;
-        }
+#if ENABLE_LIGHTNING == 1 // Add Shading
+        rgb = phong_shading(sampling_pos, color);
+#endif
 
 
 #if ENABLE_OPACITY_CORRECTION == 1 // Opacity Correction
         float d_ref= 255*(sampling_distance/sampling_distance_ref);
         Alpha = 1-pow((1-Alpha),d_ref);
-#else
-        
-#endif
-        
-        
-
-#if ENABLE_LIGHTNING == 1 // Add Shading
-        rgb = phong_shading(sampling_pos, color);
-#endif
-
         vec3 I_current= rgb*(Alpha);
         Intensity = Intensity+(I_current*T);
-        T = T*(1-Alpha);
+        T = T*(1-Alpha); 
+#else
+        vec3 I_current= rgb*(Alpha);
+        Intensity = Intensity+(I_current*T);
+        T = T*(1-Alpha);    
+#endif
+        
         
         // dummy code
         dst = vec4( Intensity, 1.0);
-
-        break;
-    }
-
         // increment the ray sampling position
         sampling_pos += ray_increment;
         // update the loop termination condition
@@ -310,3 +297,5 @@ void main()
     // return the calculated color value
     FragColor = dst;
 }
+
+ 
